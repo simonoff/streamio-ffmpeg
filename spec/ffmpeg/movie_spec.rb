@@ -5,7 +5,7 @@ module FFMPEG
     describe "initializing" do
       let(:fake_output) { StringIO.new(File.read("#{fixture_path}/outputs/#{fixture_file}")) }
       let(:movie) do
-        Open3.stub(:popen3).and_yield(nil, nil, fake_output)
+        Open3.stub(:popen3).and_return([nil, nil, fake_output])
         Movie.new(__FILE__)
       end
 
@@ -135,7 +135,7 @@ module FFMPEG
 
       describe 'Special cases: ' do
         let(:movie) do
-          Open3.stub(:popen3).and_yield(nil,fake_output,nil)
+          Open3.stub(:popen3).and_return(nil,nil, fake_output)
           Movie.new(__FILE__)
         end
 
@@ -191,7 +191,7 @@ module FFMPEG
           let(:fixture_file) { 'file_with_non_supported_audio_stdout.txt' }
           let(:movie) do
             fake_stderr = StringIO.new(File.read("#{fixture_path}/outputs/file_with_non_supported_audio_stderr.txt"))
-            Open3.stub(:popen3).and_yield(nil,fake_output,fake_stderr)
+            Open3.stub(:popen3).and_return(nil,fake_output,fake_stderr)
             Movie.new(__FILE__)
           end
 

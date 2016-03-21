@@ -14,7 +14,7 @@ module FFMPEG
     end
 
     def initialize(movie, output_file, options = EncodingOptions.new, transcoder_options = {})
-      @movie = movie
+      @movie       = movie
       @output_file = output_file
 
       if options.is_a?(String) || options.is_a?(EncodingOptions)
@@ -26,7 +26,7 @@ module FFMPEG
       end
 
       @transcoder_options = transcoder_options
-      @errors = []
+      @errors             = []
 
       apply_transcoder_options
     end
@@ -76,7 +76,11 @@ module FFMPEG
           end
 
           if @@timeout
-            stderr.each_with_timeout(wait_thr.pid, @@timeout, 'size=', &next_line)
+            if RUBY_PLATFORM =~ /java/
+              stderr.each_with_timeout(nil, @@timeout, 'size=', &next_line)
+            else
+              stderr.each_with_timeout(wait_thr.pid, @@timeout, 'size=', &next_line)
+            end
           else
             stderr.each('size=', &next_line)
           end
@@ -100,20 +104,20 @@ module FFMPEG
     end
 
     def apply_transcoder_options
-       # if true runs #validate_output_file
+      # if true runs #validate_output_file
       @transcoder_options[:validate] = @transcoder_options.fetch(:validate) { true }
 
       return if @movie.calculated_aspect_ratio.nil?
       case @transcoder_options[:preserve_aspect_ratio].to_s
       when "width"
-        new_height = @raw_options.width / @movie.calculated_aspect_ratio
-        new_height = new_height.ceil.even? ? new_height.ceil : new_height.floor
-        new_height += 1 if new_height.odd? # needed if new_height ended up with no decimals in the first place
+        new_height                = @raw_options.width / @movie.calculated_aspect_ratio
+        new_height                = new_height.ceil.even? ? new_height.ceil : new_height.floor
+        new_height                += 1 if new_height.odd? # needed if new_height ended up with no decimals in the first place
         @raw_options[:resolution] = "#{@raw_options.width}x#{new_height}"
       when "height"
-        new_width = @raw_options.height * @movie.calculated_aspect_ratio
-        new_width = new_width.ceil.even? ? new_width.ceil : new_width.floor
-        new_width += 1 if new_width.odd?
+        new_width                 = @raw_options.height * @movie.calculated_aspect_ratio
+        new_width                 = new_width.ceil.even? ? new_width.ceil : new_width.floor
+        new_width                 += 1 if new_width.odd?
         @raw_options[:resolution] = "#{new_width}x#{@raw_options.height}"
       end
     end

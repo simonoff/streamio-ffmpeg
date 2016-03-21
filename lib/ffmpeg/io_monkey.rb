@@ -32,6 +32,8 @@ class IO
   rescue Timeout::Error
     if RUBY_PLATFORM =~ /(win|w)(32|64)$/
       Process.kill(1, pid)
+    elsif RUBY_PLATFORM =~ /java/
+      # nothing
     else
       Process.kill('SIGKILL', pid)
     end

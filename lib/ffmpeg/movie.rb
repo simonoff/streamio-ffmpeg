@@ -17,15 +17,31 @@ module FFMPEG
       command = "#{FFMPEG.ffprobe_binary} -i #{Shellwords.escape(path)} -print_format json -show_format -show_streams -show_error"
       std_output = ''
       std_error = ''
+      threads = []
 
-      Open3.popen3(command) do |stdin, stdout, stderr|
-        std_output = stdout.read unless stdout.nil?
-        std_error = stderr.read unless stderr.nil?
+
+      if RUBY_PLATFORM =~ /java/
+        _pid, _stdin, stdout, stderr = IO.popen4(command)
+      else
+        _stdin, stdout, stderr, _thread = Open3.popen3(command)
       end
+      threads << Thread.new(stdout) do |out|
+        out.each do |l|
+          std_output << "\n#{l}"
+        end
+      end
+
+      threads << Thread.new(stderr) do |err|
+        err.each do |l|
+          std_error << "\n#{l}"
+        end
+      end
+
+      threads.each { |t| t.join }
 
       fix_encoding(std_output)
 
-      metadata = MultiJson.load(std_output, symbolize_keys: true)
+      metadata = ::MultiJson.load(std_output, symbolize_keys: true)
 
       if metadata.key?(:error)
 
@@ -114,7 +130,7 @@ module FFMPEG
     end
 
     def calculated_aspect_ratio
-      aspect_from_dimensions
+      aspect_from_dar || aspect_from_dimensions
     end
 
     def calculated_pixel_aspect_ratio
